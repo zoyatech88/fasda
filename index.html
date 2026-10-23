@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FASDA Digitalisasi Parigi Moutong - Ardiansyah, S.Pd</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        frozen: {
+                            50: '#f2f7fa',
+                            100: '#e1eef4',
+                            200: '#c6e0eb',
+                            300: '#a5c5d9',
+                            400: '#7bb0c8',
+                            500: '#5294b3',
+                            600: '#3d7796',
+                            700: '#34617c',
+                            800: '#2f5167',
+                            900: '#2a4457',
+                        },
+                        darkaccent: '#1A1A1A'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF.js CDN for rendering PDF documents to Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
+    <!-- Mammoth.js for converting .docx to HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a5c5d9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7bb0c8;
+        }
+
+        /* Printable A4 Paper Layout */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 10px auto;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            box-sizing: border-box;
+            user-select: text;
+        }
+
+        /* Printable Rules */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #word-editor-container, #word-editor-container * {
+                visibility: visible;
+            }
+            #word-editor-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .a4-page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: auto;
+                padding: 15mm;
+            }
+        }
+
+        .presentation-bg {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+        }
+
+        .sidebar-transition {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .pdf-canvas-element {
+            max-width: none !important;
+            max-height: none !important;
+            transform-origin: top center;
+            transition: transform 0.15s ease-out;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .pdf-scroll-viewport {
+            overflow: auto !important;
+            max-height: 75vh;
+            width: 100%;
+            display: block;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 bg-slate-50 antialiased overflow-hidden">
+
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- TOP NAVIGATION BAR -->
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 z-20 shrink-0 shadow-sm">
+            <div class="flex items-center gap-3">
+                <button id="sidebar-toggle-btn" onclick="app.toggleSidebar()" class="p-2 rounded-lg text-slate-600 hover:bg-frozen-100 hover:text-frozen-800 transition focus:outline-none" title="Buka/Tutup Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div class="flex items-center gap-3">
+                    <div id="topbar-logo-container" class="w-9 h-9 rounded-lg bg-frozen-300 flex items-center justify-center text-slate-900 font-bold shadow-inner overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-sm sm:text-base leading-tight">FASDA DIGITALISASI</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Kabupaten Parigi Moutong</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div id="current-page-badge" class="hidden md:flex items-center gap-2 px-3 py-1 bg-frozen-50 text-frozen-800 rounded-full text-xs font-semibold border border-frozen-200">
+                    <i class="fa-solid fa-circle text-[8px] text-frozen-500 animate-pulse"></i>
+                    <span id="current-page-title">Beranda</span>
+                </div>
+
+                <button onclick="app.toggleFullscreen()" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs px-3.5 py-2 rounded-lg font-medium transition shadow-sm" title="Mode Layar Penuh">
+                    <i class="fa-solid fa-expand text-xs"></i>
+                    <span class="hidden sm:inline">Layar Penuh</span>
+                </button>
+
+                <div onclick="app.navigateTo('biografi')" class="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-slate-100 rounded-lg transition" title="Lihat Profil FASDA">
+                    <div id="topbar-avatar" class="w-8 h-8 rounded-full bg-slate-300 overflow-hidden border border-frozen-300 flex items-center justify-center">
+                        <i class="fa-solid fa-user text-slate-500 text-xs"></i>
+                    </div>
+                    <span id="topbar-user-name" class="text-xs font-semibold text-slate-700 hidden lg:inline max-w-[120px] truncate">Ardiansyah, S.Pd</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- SIDEBAR NAVIGATION -->
+            <aside id="app-sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 sidebar-transition z-10 relative border-r border-slate-800">
+                <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                    
+                    <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider sidebar-label">Utama</div>
+                    
+                    <button onclick="app.navigateTo('dashboard')" data-page="dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-chart-pie w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Beranda</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('biografi')" data-page="biografi" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-address-card w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Biografi FASDA</span>
+                    </button>
+
+                    <div class="pt-3 px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider sidebar-label">Materi & Belajar</div>
+
+                    <button onclick="app.navigateTo('materi-utama')" data-page="materi-utama" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-book-open-reader w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Materi Utama</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('materi-pendukung')" data-page="materi-pendukung" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-file-pdf w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Materi Pendukung</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('materi-word')" data-page="materi-word" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-file-word w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Materi Word (A4)</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('ice-breaking')" data-page="ice-breaking" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-film w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Ice Breaking</span>
+                    </button>
+
+                    <div class="pt-3 px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider sidebar-label">Komunitas & Akses</div>
+
+                    <button onclick="app.navigateTo('grup-wa')" data-page="grup-wa" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-brands fa-whatsapp w-5 text-center text-green-400"></i>
+                        <span class="sidebar-text truncate">Grup WA Gugus</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('link-khusus')" data-page="link-khusus" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-link w-5 text-center text-frozen-300"></i>
+                        <span class="sidebar-text truncate">Link Khusus</span>
+                    </button>
+
+                    <div class="pt-3 px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider sidebar-label">Manajemen Content</div>
+
+                    <button onclick="app.navigateTo('setting-materi')" data-page="setting-materi" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-sliders w-5 text-center text-amber-400"></i>
+                        <span class="sidebar-text truncate">Setting Materi</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('setting-word')" data-page="setting-word" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-file-circle-plus w-5 text-center text-amber-400"></i>
+                        <span class="sidebar-text truncate">Setting Word</span>
+                    </button>
+
+                    <button onclick="app.navigateTo('setting-ice')" data-page="setting-ice" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white text-slate-300">
+                        <i class="fa-solid fa-clapperboard w-5 text-center text-amber-400"></i>
+                        <span class="sidebar-text truncate">Setting Ice Breaking</span>
+                    </button>
+
+                </nav>
+
+                <div class="p-3 bg-slate-950 border-t border-slate-800 text-xs text-slate-400 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="sidebar-text truncate">IndexedDB Offline Ready</span>
+                </div>
+            </aside>
+
+            <main id="main-content" class="flex-1 bg-slate-100 overflow-y-auto relative p-4 sm:p-6 md:p-8">
+                
+                <!-- PAGE 1: DASHBOARD -->
+                <section id="page-dashboard" class="app-page space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-frozen-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                        <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-frozen-300 pointer-events-none">
+                            <i class="fa-solid fa-laptop-code"></i>
+                        </div>
+                        <div class="relative z-10 max-w-3xl space-y-3">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-frozen-300/20 text-frozen-200 text-xs font-semibold backdrop-blur-md">
+                                <i class="fa-solid fa-star text-amber-300"></i> FASDA Digitalisasi Parigi Moutong
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Selamat Datang di Portal Akses Edukasi Digital</h2>
+                            <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                                Platform aplikasi interaktif berbasis IndexedDB offline untuk mendukung kelancaran presentasi materi, modul pelatihan, ice breaking, serta dokumen kerja pendampingan digital.
+                            </p>
+                            <div class="pt-2 flex flex-wrap gap-3">
+                                <button onclick="app.navigateTo('materi-utama')" class="bg-frozen-300 hover:bg-frozen-400 text-slate-900 font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+                                    <i class="fa-solid fa-play"></i> Mulai Presentasi Materi
+                                </button>
+                                <button onclick="app.navigateTo('biografi')" class="bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 text-xs sm:text-sm px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+                                    <i class="fa-solid fa-user-tie"></i> Biografi FASDA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-frozen-100 text-frozen-700 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-book"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Total Materi PDF</p>
+                                <h3 id="stat-total-pdf" class="text-2xl font-bold text-slate-900">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-file-word"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Dokumen Word (A4)</p>
+                                <h3 id="stat-total-word" class="text-2xl font-bold text-slate-900">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-video"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Video Ice Breaking</p>
+                                <h3 id="stat-total-ice" class="text-2xl font-bold text-slate-900">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-link"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Tautan Tersimpan</p>
+                                <h3 id="stat-total-link" class="text-2xl font-bold text-slate-900">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 2: BIOGRAFI FASDA -->
+                <section id="page-biografi" class="app-page space-y-6 max-w-5xl mx-auto hidden">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="h-32 bg-gradient-to-r from-frozen-400 via-frozen-300 to-slate-900"></div>
+                        
+                        <div class="px-6 pb-6 relative">
+                            <div class="flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-16 gap-4 mb-6">
+                                <div class="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
+                                    <div class="relative group">
+                                        <div id="bio-avatar-box" class="w-28 h-28 rounded-2xl bg-white p-1 shadow-lg border-2 border-frozen-300 overflow-hidden">
+                                            <img id="bio-profile-img" src="https://placehold.co/200x200/a5c5d9/1a1a1a?text=FASDA" class="w-full h-full object-cover rounded-xl" alt="Foto Profil">
+                                        </div>
+                                        <label for="bio-upload-photo" class="absolute inset-0 bg-black/50 text-white rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-xs font-medium">
+                                            <i class="fa-solid fa-camera text-base mb-1"></i> Ubah Foto
+                                        </label>
+                                        <input type="file" id="bio-upload-photo" accept="image/*" class="hidden" onchange="app.handleProfilePhotoUpload(event)">
+                                    </div>
+                                    <div>
+                                        <h2 id="bio-display-name" class="text-2xl font-extrabold text-slate-900">Ardiansyah, S.Pd</h2>
+                                        <p id="bio-display-jabatan" class="text-sm font-medium text-frozen-700">FASDA Digitalisasi Kabupaten Parigi Moutong</p>
+                                    </div>
+                                </div>
+
+                                <button onclick="app.openEditBioModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit Profil FASDA
+                                </button>
+                            </div>
+
+                            <div class="bg-frozen-50 p-4 rounded-xl border border-frozen-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div id="bio-app-logo-preview" class="w-12 h-12 rounded-lg bg-white p-1 border border-frozen-300 flex items-center justify-center overflow-hidden">
+                                        <i class="fa-solid fa-graduation-cap text-2xl text-slate-800"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-900">Logo Utama Aplikasi</h4>
+                                        <p class="text-[11px] text-slate-500">Logo ini ditampilkan di Topbar navigasi aplikasi.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label for="logo-upload-input" class="bg-white hover:bg-slate-100 text-slate-800 text-xs px-3 py-1.5 rounded-lg border border-slate-300 font-semibold cursor-pointer transition">
+                                        <i class="fa-solid fa-upload"></i> Unggah Logo
+                                    </label>
+                                    <input type="file" id="logo-upload-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="hidden" onchange="app.handleAppLogoUpload(event)">
+                                    <button onclick="app.resetAppLogo()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs px-3 py-1.5 rounded-lg border border-rose-200 font-semibold transition">
+                                        <i class="fa-solid fa-rotate-left"></i> Reset Logo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                        <i class="fa-solid fa-id-card text-frozen-500"></i> Data Identitas FASDA
+                                    </h3>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">NIP / NIPPPK:</span><span id="bio-nip" class="font-bold text-slate-800">-</span></div>
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">Instansi Asal:</span><span id="bio-instansi-asal" class="font-bold text-slate-800">-</span></div>
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">Jabatan FASDA:</span><span id="bio-jabatan" class="font-bold text-slate-800">-</span></div>
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">Materi Pengampuan:</span><span id="bio-materi" class="font-bold text-slate-800">-</span></div>
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">Dinas / Pengawas:</span><span id="bio-dinas" class="font-bold text-slate-800">-</span></div>
+                                        <div class="flex justify-between py-1 border-b border-slate-100"><span class="text-slate-500 font-medium">No. WhatsApp / HP:</span><span id="bio-wa" class="font-bold text-emerald-600">-</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <h3 class="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                        <i class="fa-solid fa-map-location-dot text-frozen-500"></i> Penugasan & Deskripsi
+                                    </h3>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <span class="text-xs text-slate-500 font-medium block mb-1">Wilayah Tugas Penampingan:</span>
+                                            <p id="bio-wilayah" class="text-xs font-semibold bg-slate-100 p-2.5 rounded-lg border border-slate-200 text-slate-800">-</p>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-500 font-medium block mb-1">Deskripsi & Ringkasan Biografi:</span>
+                                            <p id="bio-deskripsi" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 3: MATERI UTAMA -->
+                <section id="page-materi-utama" class="app-page space-y-4 hidden">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <i class="fa-solid fa-book-open text-frozen-600 text-xl"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">Pemutar Materi Utama</h3>
+                                <p class="text-xs text-slate-500">Pilih berkas PDF utama untuk dipresentasikan.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <select id="select-materi-utama" onchange="app.loadPdfMaterial('utama', this.value)" class="w-full md:w-64 bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg p-2.5 focus:ring-frozen-500">
+                                <option value="">-- Pilih Materi Utama --</option>
+                            </select>
+
+                            <button onclick="app.launchPresentationMode('utama')" class="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition shrink-0">
+                                <i class="fa-solid fa-desktop"></i> Mode Presentasi
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-2xl shadow-xl p-4 flex flex-col items-center justify-center min-h-[600px] relative overflow-hidden" id="pdf-box-utama">
+                        <div id="pdf-placeholder-utama" class="text-center text-slate-400 p-8 space-y-3">
+                            <i class="fa-solid fa-file-pdf text-6xl text-slate-600"></i>
+                            <p class="text-sm">Belum ada materi PDF utama yang dipilih atau diunggah.</p>
+                        </div>
+
+                        <div id="pdf-view-wrapper-utama" class="hidden flex-col items-center w-full space-y-3">
+                            <div class="bg-slate-900/90 backdrop-blur border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-4 text-white text-xs z-10 shadow-lg">
+                                <button onclick="app.changePdfPage(-1)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-chevron-left"></i></button>
+                                <span>Halaman <span id="pdf-current-page" class="font-bold text-frozen-300">1</span> / <span id="pdf-total-pages">1</span></span>
+                                <button onclick="app.changePdfPage(1)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-chevron-right"></i></button>
+                                <div class="h-4 w-px bg-slate-700"></div>
+                                <button onclick="app.zoomPdf(-0.2)" class="hover:text-frozen-300 transition p-1.5" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                                <span id="pdf-zoom-level" class="text-[11px] font-mono">100%</span>
+                                <button onclick="app.zoomPdf(0.2)" class="hover:text-frozen-300 transition p-1.5" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                                <button onclick="app.resetZoomPdf()" class="hover:text-frozen-300 transition p-1.5 text-[10px]" title="Reset Zoom">Reset</button>
+                            </div>
+
+                            <div class="pdf-scroll-viewport border border-slate-700 rounded-xl p-4 bg-slate-900/50">
+                                <canvas id="pdf-canvas-utama" class="pdf-canvas-element shadow-2xl rounded bg-white"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 4: MATERI PENDUKUNG -->
+                <section id="page-materi-pendukung" class="app-page space-y-4 hidden">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <i class="fa-solid fa-file-shield text-frozen-600 text-xl"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">Materi Pendukung & Modul Khusus</h3>
+                                <p class="text-xs text-slate-500">Mendukung format ukuran non-standar (F4, Legal, A3) dengan scrollbar internal.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <select id="select-materi-pendukung" onchange="app.loadPdfMaterial('pendukung', this.value)" class="w-full md:w-64 bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg p-2.5 focus:ring-frozen-500">
+                                <option value="">-- Pilih Materi Pendukung --</option>
+                            </select>
+
+                            <button onclick="app.launchPresentationMode('pendukung')" class="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition shrink-0">
+                                <i class="fa-solid fa-desktop"></i> Mode Presentasi
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-2xl shadow-xl p-4 flex flex-col items-center justify-center min-h-[600px] relative">
+                        <div id="pdf-placeholder-pendukung" class="text-center text-slate-400 p-8 space-y-3">
+                            <i class="fa-solid fa-folder-open text-6xl text-slate-600"></i>
+                            <p class="text-sm">Belum ada berkas PDF pendukung yang dipilih.</p>
+                        </div>
+
+                        <div id="pdf-view-wrapper-pendukung" class="hidden flex-col items-center w-full space-y-3">
+                            <div class="bg-slate-900/90 backdrop-blur border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-4 text-white text-xs z-10 shadow-lg">
+                                <button onclick="app.changePdfPage(-1)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-chevron-left"></i></button>
+                                <span>Halaman <span id="pdf-current-page-p" class="font-bold text-frozen-300">1</span> / <span id="pdf-total-pages-p">1</span></span>
+                                <button onclick="app.changePdfPage(1)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-chevron-right"></i></button>
+                                <div class="h-4 w-px bg-slate-700"></div>
+                                <button onclick="app.zoomPdf(-0.2)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                                <span id="pdf-zoom-level-p" class="text-[11px] font-mono">100%</span>
+                                <button onclick="app.zoomPdf(0.2)" class="hover:text-frozen-300 transition p-1.5"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                                <button onclick="app.resetZoomPdf()" class="hover:text-frozen-300 transition p-1.5 text-[10px]" title="Reset Zoom">Reset</button>
+                            </div>
+
+                            <div class="pdf-scroll-viewport border border-slate-700 rounded-xl p-4 bg-slate-900/50">
+                                <canvas id="pdf-canvas-pendukung" class="pdf-canvas-element shadow-2xl rounded bg-white"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 5: MATERI WORD (A4 WYSIWYG EDITOR) -->
+                <section id="page-materi-word" class="app-page space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 no-print">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-word text-blue-600 text-2xl"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">Penyunting Dokumen Word Digital (A4)</h3>
+                                <p class="text-xs text-slate-500">Edit, simpan ke IndexedDB, atau cetak/ekspor PDF resmi.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <select id="select-word-doc" onchange="app.loadWordDocument(this.value)" class="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg p-2 focus:ring-frozen-500">
+                                <option value="">-- Pilih Dokumen --</option>
+                            </select>
+
+                            <button onclick="app.saveCurrentWordDoc()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-2 rounded-lg font-semibold flex items-center gap-2 transition">
+                                <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan Word
+                            </button>
+
+                            <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3.5 py-2 rounded-lg font-semibold flex items-center gap-2 transition">
+                                <i class="fa-solid fa-print"></i> Cetak / Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-2 shadow-sm flex flex-wrap items-center gap-1.5 no-print text-slate-700">
+                        <button onclick="app.execCmd('bold')" class="p-2 hover:bg-slate-100 rounded text-xs font-bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                        <button onclick="app.execCmd('italic')" class="p-2 hover:bg-slate-100 rounded text-xs italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                        <button onclick="app.execCmd('underline')" class="p-2 hover:bg-slate-100 rounded text-xs underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                        <button onclick="app.execCmd('strikeThrough')" class="p-2 hover:bg-slate-100 rounded text-xs line-through" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+                        <button onclick="app.execCmd('justifyLeft')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-align-left"></i></button>
+                        <button onclick="app.execCmd('justifyCenter')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-align-center"></i></button>
+                        <button onclick="app.execCmd('justifyRight')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-align-right"></i></button>
+                        <button onclick="app.execCmd('justifyFull')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-align-justify"></i></button>
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+                        <button onclick="app.execCmd('insertUnorderedList')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-list-ul"></i></button>
+                        <button onclick="app.execCmd('insertOrderedList')" class="p-2 hover:bg-slate-100 rounded text-xs"><i class="fa-solid fa-list-ol"></i></button>
+                    </div>
+
+                    <div class="overflow-auto max-h-[80vh] p-4 bg-slate-200/70 rounded-2xl border border-slate-300">
+                        <div id="word-editor-container" class="a4-page outline-none" contenteditable="true">
+                            <h2 style="text-align: center; color: #1e293b;"><b>DOKUMEN PENDAMPINGAN FASDA DIGITALISASI</b></h2>
+                            <p style="text-align: center; color: #64748b; font-size: 14px;">Kabupaten Parigi Moutong</p>
+                            <hr style="margin: 15px 0; border-top: 2px solid #a5c5d9;">
+                            <p>Tulis atau tempel materi laporan di sini. Anda juga dapat mengunggah berkas Microsoft Word (.docx) melalui menu <b>Setting Word</b> untuk dikonversi secara otomatis ke dalam format interaktif ini.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 6: ICE BREAKING -->
+                <section id="page-ice-breaking" class="app-page space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-film text-purple-600 text-2xl"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm">Media Player Ice Breaking</h3>
+                                <p class="text-xs text-slate-500">Putar video MP4 offline atau tautan YouTube dengan playlist otomatis.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="app.playNextIceVideo()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3.5 py-2 rounded-lg font-semibold flex items-center gap-2 transition">
+                                <i class="fa-solid fa-forward"></i> Video Berikutnya
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center justify-center min-h-[380px] border border-slate-800">
+                            <div id="ice-video-wrapper" class="w-full h-full flex items-center justify-center">
+                                <p class="text-slate-500 text-xs">Pilih video dari playlist di samping untuk mulai memutar.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[450px]">
+                            <h4 class="font-bold text-slate-900 text-sm pb-3 border-b border-slate-100 flex items-center justify-between">
+                                <span><i class="fa-solid fa-list text-purple-500"></i> Playlist Video</span>
+                                <span id="ice-playlist-count" class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">0</span>
+                            </h4>
+
+                            <div id="ice-playlist-items" class="flex-1 overflow-y-auto pt-3 space-y-2">
+                                <!-- Dynamic Playlist Cards -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 7: GRUP WA GUGUS (PENAMBAHAN TOMBOL + TAMBAH GUGUS BARU) -->
+                <section id="page-grup-wa" class="app-page space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-brands fa-whatsapp text-green-500 text-xl"></i> Grup WhatsApp Gugus & Pendampingan
+                            </h3>
+                            <p class="text-xs text-slate-500">Akses cepat QR Code dan tautan grup WhatsApp per wilayah gugus.</p>
+                        </div>
+                        <button onclick="app.openAddWaModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-2 shrink-0">
+                            <i class="fa-solid fa-plus"></i> + Tambah Gugus Baru
+                        </button>
+                    </div>
+
+                    <div id="grup-wa-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </section>
+
+                <!-- PAGE 8: LINK KHUSUS (PENAMBAHAN TOMBOL + TAMBAH LINK KHUSUS) -->
+                <section id="page-link-khusus" class="app-page space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-globe text-frozen-600"></i> Direktori Link Khusus & Portal
+                            </h3>
+                            <p class="text-xs text-slate-500">Google Drive, PMM, Form Absensi, Canva, dan Portal Eksternal.</p>
+                        </div>
+
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <div class="relative w-full md:w-64">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                                <input type="text" id="link-search-input" onkeyup="app.filterExternalLinks()" placeholder="Cari nama link..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-frozen-500">
+                            </div>
+                            <button onclick="app.openAddLinkModal()" class="bg-frozen-600 hover:bg-frozen-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-2 shrink-0 whitespace-nowrap">
+                                <i class="fa-solid fa-plus"></i> + Tambah Link Khusus
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="external-links-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </section>
+
+                <!-- PAGE 9: SETTING MATERI -->
+                <section id="page-setting-materi" class="app-page space-y-6 max-w-5xl mx-auto hidden">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-frozen-600"></i> Unggah Berkas Materi PDF Baru
+                        </h3>
+
+                        <form id="form-upload-materi" onsubmit="app.handleMateriPdfSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Judul Materi PDF</label>
+                                <input type="text" id="materi-title" required placeholder="Contoh: Modul Digitalisasi Pembelajaran v1" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Target Kategori Penempatan</label>
+                                <select id="materi-category" required class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white">
+                                    <option value="utama">Materi Utama</option>
+                                    <option value="pendukung">Materi Pendukung</option>
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih File PDF</label>
+                                <input type="file" id="materi-file" accept="application/pdf" required class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-slate-50">
+                            </div>
+
+                            <div class="md:col-span-2 flex justify-end">
+                                <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-5 py-2.5 rounded-xl font-bold transition">
+                                    <i class="fa-solid fa-plus"></i> Simpan File ke IndexedDB
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Daftar Berkas PDF Tersimpan</div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-700">
+                                <thead class="bg-slate-50 text-slate-900 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Urutan</th>
+                                        <th class="p-3">Judul Materi</th>
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-materi-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 10: SETTING WORD -->
+                <section id="page-setting-word" class="app-page space-y-6 max-w-5xl mx-auto hidden">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-file-circle-plus text-blue-600"></i> Buat / Impor Dokumen Word (.docx)
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 border border-dashed border-slate-300 bg-slate-50 rounded-xl text-center space-y-3">
+                                <i class="fa-solid fa-file-word text-4xl text-blue-500"></i>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-900">Unggah & Konversi File .docx</h4>
+                                    <p class="text-[11px] text-slate-500">Menggunakan Mammoth.js untuk mengonversi berkas Word ke HTML.</p>
+                                </div>
+                                <input type="file" id="word-file-input" accept=".docx" class="hidden" onchange="app.handleDocxImport(event)">
+                                <button onclick="document.getElementById('word-file-input').click()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-semibold transition">
+                                    Pilih Berkas .docx
+                                </button>
+                            </div>
+
+                            <div class="p-4 border border-dashed border-slate-300 bg-slate-50 rounded-xl text-center space-y-3 flex flex-col justify-center items-center">
+                                <i class="fa-solid fa-file-circle-check text-4xl text-emerald-500"></i>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-900">Buat Dokumen Baru dari Nol</h4>
+                                    <p class="text-[11px] text-slate-500">Mulailah dengan lembar kerja A4 kosong.</p>
+                                </div>
+                                <button onclick="app.createNewBlankWordDoc()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-semibold transition">
+                                    Dokumen Kosong A4
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Daftar Dokumen Word Digital</div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-700">
+                                <thead class="bg-slate-50 text-slate-900 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Urutan</th>
+                                        <th class="p-3">Judul Dokumen</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-word-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 11: SETTING ICE BREAKING -->
+                <section id="page-setting-ice" class="app-page space-y-6 max-w-5xl mx-auto hidden">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 text-base border-b border-slate-100 pb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-video text-purple-600"></i> Tambah Video Ice Breaking
+                        </h3>
+
+                        <form id="form-add-ice" onsubmit="app.handleAddIceSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Judul Video Ice Breaking</label>
+                                <input type="text" id="ice-title" required placeholder="Contoh: Senam Otak / Energing Pagi" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Sumber Media</label>
+                                    <select id="ice-type" onchange="app.toggleIceTypeInput(this.value)" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white">
+                                        <option value="url">Tautan YouTube / URL MP4 Eksternal</option>
+                                        <option value="file">Unggah Berkas MP4 Lokal (IndexedDB)</option>
+                                    </select>
+                                </div>
+
+                                <div id="ice-input-url-box">
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">URL Video (YouTube / Direct MP4)</label>
+                                    <input type="text" id="ice-url" placeholder="https://www.youtube.com/watch?v=..." class="w-full p-2.5 border border-slate-300 rounded-lg text-xs">
+                                </div>
+
+                                <div id="ice-input-file-box" class="hidden">
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih File Video MP4</label>
+                                    <input type="file" id="ice-file" accept="video/mp4" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-slate-50">
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-2">
+                                    <i class="fa-solid fa-plus"></i> Tambah ke Playlist
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm flex items-center justify-between">
+                            <span>Kelola Playlist Ice Breaking</span>
+                            <button onclick="app.renderSettingIceTable()" class="text-xs text-purple-600 hover:text-purple-800 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-rotate"></i> Refresh Tabel
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-700">
+                                <thead class="bg-slate-50 text-slate-900 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3 w-16 text-center">Urutan</th>
+                                        <th class="p-3">Judul Video</th>
+                                        <th class="p-3 w-32">Tipe</th>
+                                        <th class="p-3 text-center w-40">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-ice-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+
+        <footer class="py-3 px-6 bg-slate-900 text-slate-300 text-center text-xs sm:text-sm font-semibold border-t border-slate-800 flex items-center justify-center gap-2 select-none z-30">
+            <span>&copy;</span> <span id="app-footer-copyright">Ardiansyah, S.Pd | SD Negeri Paranggi</span>
+        </footer>
+    </div>
+
+    <!-- MODAL 1: QR CODE ZOOM MODAL -->
+    <div id="modal-qr" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
+            <button onclick="app.closeQrModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-800 text-lg w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="modal-qr-title" class="font-bold text-slate-900 text-base">QR Code</h3>
+            <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 flex items-center justify-center">
+                <img id="modal-qr-img" src="" class="max-h-64 object-contain rounded-lg" alt="QR Code Large">
+            </div>
+            <p class="text-xs text-slate-500">Pindai kode QR menggunakan kamera WhatsApp atau aplikasi scanner HP Anda.</p>
+        </div>
+    </div>
+
+    <!-- MODAL 2: EDIT BIOGRAPHY MODAL -->
+    <div id="modal-edit-bio" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base">Edit Profil Biografi FASDA</h3>
+                <button onclick="app.closeEditBioModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="form-edit-bio" onsubmit="app.saveProfileData(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap & Gelar</label>
+                    <input type="text" id="edit-bio-name" required class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">NIP / NIPPPK</label>
+                    <input type="text" id="edit-bio-nip" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Instansi Asal</label>
+                    <input type="text" id="edit-bio-instansi" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Jabatan FASDA</label>
+                    <input type="text" id="edit-bio-jabatan" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Materi Pengampuan</label>
+                    <input type="text" id="edit-bio-materi" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Dinas / Pengawas</label>
+                    <input type="text" id="edit-bio-dinas" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">No. Kontak WhatsApp</label>
+                    <input type="text" id="edit-bio-wa" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Wilayah Tugas</label>
+                    <input type="text" id="edit-bio-wilayah" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block font-semibold text-slate-700 mb-1">Deskripsi / Biografi Singkat</label>
+                    <textarea id="edit-bio-deskripsi" rows="3" class="w-full p-2 border border-slate-300 rounded-lg"></textarea>
+                </div>
+
+                <div class="md:col-span-2 flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="app.closeEditBioModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Batal</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ADD WA GUGUS MODAL -->
+    <div id="modal-add-wa" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-green-500"></i> Tambah Gugus WA Baru
+                </h3>
+                <button onclick="app.closeAddWaModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="form-add-wa" onsubmit="app.handleAddWaGroupSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Gugus / Komunitas</label>
+                    <input type="text" id="add-wa-name" required placeholder="Contoh: Gugus 3 Parigi Selatan" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Wilayah / Deskripsi Singkat</label>
+                    <input type="text" id="add-wa-desc" required placeholder="Contoh: Pendampingan Guru SD Wilayah Parigi" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Link WhatsApp Group</label>
+                    <input type="url" id="add-wa-link" required placeholder="https://chat.whatsapp.com/..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Unggah Gambar QR Code (Opsional)</label>
+                    <input type="file" id="add-wa-qr-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50">
+                    <p class="text-[10px] text-slate-400 mt-1">Unggah gambar QR code grup WA untuk dipindai pengguna.</p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="app.closeAddWaModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Gugus
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: ADD EXTERNAL LINK MODAL -->
+    <div id="modal-add-link" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-link text-frozen-600"></i> Tambah Link Khusus Baru
+                </h3>
+                <button onclick="app.closeAddLinkModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="form-add-link" onsubmit="app.handleAddExternalLinkSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Judul Tautan / Portal</label>
+                    <input type="text" id="add-link-title" required placeholder="Contoh: Form Absensi Workshop Digital" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-frozen-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Kategori Tautan</label>
+                    <select id="add-link-category" required class="w-full p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-frozen-500">
+                        <option value="Google Drive">Google Drive</option>
+                        <option value="Portal Resmi">Portal Resmi / Kemdikbud</option>
+                        <option value="Canva Edu">Canva Edu</option>
+                        <option value="Form & Absensi">Form & Absensi</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">URL / Tautan Website</label>
+                    <input type="url" id="add-link-url" required placeholder="https://..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-frozen-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Deskripsi Singkat</label>
+                    <input type="text" id="add-link-desc" placeholder="Contoh: Berkas formulir kehadiran peserta" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-frozen-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Unggah Gambar QR Code (Opsional)</label>
+                    <input type="file" id="add-link-qr-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50">
+                    <p class="text-[10px] text-slate-400 mt-1">Bila ada, QR code dapat diunggah untuk ditampilkan pada kartu link.</p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="app.closeAddLinkModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-lg bg-frozen-600 hover:bg-frozen-700 text-white font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Link
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: FULLSCREEN PRESENTATION OVERLAY FOR PDF SLIDES -->
+    <div id="presentation-overlay" class="fixed inset-0 presentation-bg z-50 hidden flex-col justify-between p-4">
+        <div class="flex items-center justify-between text-white text-xs bg-slate-900/80 px-6 py-3 rounded-2xl border border-slate-800">
+            <div class="flex items-center gap-3">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                <span id="pres-doc-title" class="font-bold text-sm text-frozen-200">Mode Presentasi Layar Penuh</span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="app.changePdfPage(-1)" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg"><i class="fa-solid fa-arrow-left"></i> Prev</button>
+                <span class="font-mono">Hal <span id="pres-current-page">1</span> / <span id="pres-total-pages">1</span></span>
+                <button onclick="app.changePdfPage(1)" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg">Next <i class="fa-solid fa-arrow-right"></i></button>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <button onclick="app.zoomPdf(-0.2)" class="p-1.5 hover:text-frozen-300" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <span id="pres-zoom-level" class="text-[11px] font-mono">100%</span>
+                <button onclick="app.zoomPdf(0.2)" class="p-1.5 hover:text-frozen-300" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button onclick="app.exitPresentationMode()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-bold">
+                    <i class="fa-solid fa-xmark"></i> Keluar
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 pdf-scroll-viewport flex items-center justify-center p-4">
+            <canvas id="pres-canvas" class="pdf-canvas-element shadow-2xl rounded-lg bg-white"></canvas>
+        </div>
+
+        <div class="text-center text-slate-400 text-xs py-1">
+            Gunakan tombol panah keyboard / Wireless Presenter Pointer (<i class="fa-solid fa-keyboard"></i> Left, Right, PageUp, PageDown, Space) untuk pindah slide.
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-16 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        /**
+         * FASDA DIGITALISASI SINGLE PAGE APPLICATION ENGINE
+         * Owner: Ardiansyah, S.Pd | SD Negeri Paranggi
+         */
+        class FasdaApp {
+            constructor() {
+                this.dbName = 'FasdaDigitalDB';
+                this.dbVersion = 1;
+                this.db = null;
+                
+                // Active State Tracking
+                this.currentPage = 'dashboard';
+                this.sidebarCollapsed = false;
+                this.activePdfDoc = null;
+                this.activePdfCategory = null;
+                this.pdfCurrentPageNum = 1;
+                this.pdfTotalPages = 0;
+                
+                // Zoom Scale Variable (Default 1.0 = 100%, max 2.5)
+                this.pdfScale = 1.0;
+                
+                // Ice Breaking Playlist Tracking
+                this.icePlaylist = [];
+                this.currentIceIndex = 0;
+
+                this.handleKeyDown = this.handleKeyDown.bind(this);
+            }
+
+            async init() {
+                try {
+                    await this.initIndexedDB();
+                    await this.seedInitialData();
+                    this.setupEventListeners();
+                    this.loadProfileData();
+                    this.loadDashboardStats();
+                    this.renderAllMaterialsTable();
+                    this.renderWordDocsTable();
+                    this.renderIcePlaylist();
+                    this.renderSettingIceTable();
+                    this.renderWaGroups();
+                    this.renderExternalLinks();
+                    this.populateMaterialSelects();
+                    this.populateWordSelect();
+                    
+                    console.log("FASDA Digitalisation Engine initialized cleanly.");
+                } catch (err) {
+                    console.error("Initialization error:", err);
+                    this.showToast("Gagal menginisialisasi IndexedDB lokal browser.", "error");
+                }
+            }
+
+            initIndexedDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+
+                        if (!db.objectStoreNames.contains('profile')) {
+                            db.createObjectStore('profile', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('materials')) {
+                            db.createObjectStore('materials', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('wordDocs')) {
+                            db.createObjectStore('wordDocs', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('icebreaker')) {
+                            db.createObjectStore('icebreaker', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('waGroups')) {
+                            db.createObjectStore('waGroups', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('externalLinks')) {
+                            db.createObjectStore('externalLinks', { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
+
+                    request.onsuccess = (e) => {
+                        this.db = e.target.result;
+                        resolve();
+                    };
+
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async seedInitialData() {
+                const tx = this.db.transaction(['profile', 'wordDocs', 'waGroups', 'externalLinks', 'icebreaker'], 'readwrite');
+                
+                const profileStore = tx.objectStore('profile');
+                const bioReq = profileStore.get('bio');
+                bioReq.onsuccess = () => {
+                    if (!bioReq.result) {
+                        profileStore.put({
+                            id: 'bio',
+                            name: 'Ardiansyah, S.Pd',
+                            nip: '19920815 202221 1 008',
+                            instansi: 'SD Negeri Paranggi',
+                            jabatan: 'FasDA Digitalisasi Pendidikan',
+                            materi: 'Digitalisasi Pembelajaran & PMM',
+                            dinas: 'Disdikbud Kab. Parigi Moutong',
+                            wa: '+62 822-9112-8833',
+                            wilayah: 'Kecamatan Ampibabo & Parigi Moutong',
+                            deskripsi: 'Berkomitmen mendorong percepatan digitalisasi sekolah di Kabupaten Parigi Moutong.'
+                        });
+                    }
+                };
+
+                const waStore = tx.objectStore('waGroups');
+                const waReq = waStore.count();
+                waReq.onsuccess = () => {
+                    if (waReq.result === 0) {
+                        waStore.add({ name: 'Gugus 1 Ampibabo', link: 'https://chat.whatsapp.com/sample1', desc: 'Gugus Pendampingan Digital Ampibabo 1' });
+                        waStore.add({ name: 'Gugus 2 Parigi Moutong', link: 'https://chat.whatsapp.com/sample2', desc: 'Gugus Pendampingan Digital Parigi' });
+                    }
+                };
+
+                const linkStore = tx.objectStore('externalLinks');
+                const linkReq = linkStore.count();
+                linkReq.onsuccess = () => {
+                    if (linkReq.result === 0) {
+                        linkStore.add({ title: 'Platform Merdeka Mengajar (PMM)', category: 'Portal Resmi', url: 'https://guru.kemdikbud.go.id', desc: 'Akses PMM Kementerian Pendidikan' });
+                        linkStore.add({ title: 'Drive Pengumpulan Laporan FASDA', category: 'Google Drive', url: 'https://drive.google.com', desc: 'Folder penyimpanan berkas bukti fisik' });
+                        linkStore.add({ title: 'Desain Presentasi Canva', category: 'Canva Edu', url: 'https://canva.com', desc: 'Template materi Canva' });
+                    }
+                };
+
+                const iceStore = tx.objectStore('icebreaker');
+                const iceReq = iceStore.count();
+                iceReq.onsuccess = () => {
+                    if (iceReq.result === 0) {
+                        iceStore.add({ title: 'Senam Otak Ceria', type: 'url', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', order: 1 });
+                    }
+                };
+            }
+
+            setupEventListeners() {
+                window.addEventListener('keydown', this.handleKeyDown);
+            }
+
+            handleKeyDown(e) {
+                if (this.currentPage === 'materi-utama' || this.currentPage === 'materi-pendukung' || !document.getElementById('presentation-overlay').classList.contains('hidden')) {
+                    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) {
+                        e.preventDefault();
+                        this.changePdfPage(1);
+                    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+                        e.preventDefault();
+                        this.changePdfPage(-1);
+                    } else if (e.key === 'Escape') {
+                        this.exitPresentationMode();
+                    }
+                }
+            }
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const bgColors = {
+                    success: 'bg-emerald-800 text-white border-emerald-600',
+                    error: 'bg-rose-800 text-white border-rose-600',
+                    info: 'bg-slate-800 text-white border-slate-600'
+                };
+
+                toast.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all transform translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
+                toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i> <span>${message}</span>`;
+                
+                container.appendChild(toast);
+                
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-y-2', 'opacity-0');
+                });
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-2');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            navigateTo(pageId) {
+                document.querySelectorAll('.app-page').forEach(page => page.classList.add('hidden'));
+                
+                const targetPage = document.getElementById(`page-${pageId}`);
+                if (targetPage) {
+                    targetPage.classList.remove('hidden');
+                    this.currentPage = pageId;
+
+                    const pageNames = {
+                        'dashboard': 'Beranda',
+                        'biografi': 'Biografi FASDA',
+                        'materi-utama': 'Materi Utama',
+                        'materi-pendukung': 'Materi Pendukung',
+                        'materi-word': 'Materi Word (A4)',
+                        'ice-breaking': 'Ice Breaking',
+                        'grup-wa': 'Grup WA Gugus',
+                        'link-khusus': 'Link Khusus',
+                        'setting-materi': 'Setting Materi',
+                        'setting-word': 'Setting Word',
+                        'setting-ice': 'Setting Ice Breaking'
+                    };
+                    document.getElementById('current-page-title').textContent = pageNames[pageId] || 'FASDA';
+
+                    document.querySelectorAll('.nav-item').forEach(item => {
+                        if (item.getAttribute('data-page') === pageId) {
+                            item.classList.add('bg-slate-800', 'text-white');
+                            item.classList.remove('text-slate-300');
+                        } else {
+                            item.classList.remove('bg-slate-800', 'text-white');
+                            item.classList.add('text-slate-300');
+                        }
+                    });
+
+                    if (pageId === 'setting-ice') {
+                        this.renderSettingIceTable();
+                    }
+                    if (pageId === 'ice-breaking') {
+                        this.renderIcePlaylist();
+                    }
+                    if (pageId === 'grup-wa') {
+                        this.renderWaGroups();
+                    }
+                    if (pageId === 'link-khusus') {
+                        this.renderExternalLinks();
+                    }
+                    if (pageId === 'dashboard') {
+                        this.loadDashboardStats();
+                    }
+                }
+            }
+
+            toggleSidebar() {
+                const sidebar = document.getElementById('app-sidebar');
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+
+                if (this.sidebarCollapsed) {
+                    sidebar.classList.remove('w-64');
+                    sidebar.classList.add('w-16');
+                    document.querySelectorAll('.sidebar-text, .sidebar-label').forEach(el => el.classList.add('hidden'));
+                } else {
+                    sidebar.classList.remove('w-16');
+                    sidebar.classList.add('w-64');
+                    document.querySelectorAll('.sidebar-text, .sidebar-label').forEach(el => el.classList.remove('hidden'));
+                }
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {
+                        this.showToast('Layar penuh tidak didukung di browser ini.', 'error');
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+
+            loadProfileData() {
+                const tx = this.db.transaction('profile', 'readonly');
+                const store = tx.objectStore('profile');
+                
+                const bioReq = store.get('bio');
+                bioReq.onsuccess = () => {
+                    const data = bioReq.result;
+                    if (data) {
+                        document.getElementById('bio-display-name').textContent = data.name;
+                        document.getElementById('bio-nip').textContent = data.nip || '-';
+                        document.getElementById('bio-instansi-asal').textContent = data.instansi || '-';
+                        document.getElementById('bio-display-jabatan').textContent = data.jabatan || '-';
+                        document.getElementById('bio-jabatan').textContent = data.jabatan || '-';
+                        document.getElementById('bio-materi').textContent = data.materi || '-';
+                        document.getElementById('bio-dinas').textContent = data.dinas || '-';
+                        document.getElementById('bio-wa').textContent = data.wa || '-';
+                        document.getElementById('bio-wilayah').textContent = data.wilayah || '-';
+                        document.getElementById('bio-deskripsi').textContent = data.deskripsi || '-';
+                        document.getElementById('topbar-user-name').textContent = data.name;
+                    }
+                };
+
+                const photoReq = store.get('photo');
+                photoReq.onsuccess = () => {
+                    if (photoReq.result && photoReq.result.blob) {
+                        const photoUrl = URL.createObjectURL(photoReq.result.blob);
+                        document.getElementById('bio-profile-img').src = photoUrl;
+                        document.getElementById('topbar-avatar').innerHTML = `<img src="${photoUrl}" class="w-full h-full object-cover">`;
+                    }
+                };
+
+                const logoReq = store.get('logo');
+                logoReq.onsuccess = () => {
+                    if (logoReq.result && logoReq.result.blob) {
+                        const logoUrl = URL.createObjectURL(logoReq.result.blob);
+                        document.getElementById('topbar-logo-container').innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain p-1">`;
+                        document.getElementById('bio-app-logo-preview').innerHTML = `<img src="${logoUrl}" class="w-full h-full object-contain">`;
+                    }
+                };
+            }
+
+            openEditBioModal() {
+                const tx = this.db.transaction('profile', 'readonly');
+                const bioReq = tx.objectStore('profile').get('bio');
+                bioReq.onsuccess = () => {
+                    const data = bioReq.result || {};
+                    document.getElementById('edit-bio-name').value = data.name || '';
+                    document.getElementById('edit-bio-nip').value = data.nip || '';
+                    document.getElementById('edit-bio-instansi').value = data.instansi || '';
+                    document.getElementById('edit-bio-jabatan').value = data.jabatan || '';
+                    document.getElementById('edit-bio-materi').value = data.materi || '';
+                    document.getElementById('edit-bio-dinas').value = data.dinas || '';
+                    document.getElementById('edit-bio-wa').value = data.wa || '';
+                    document.getElementById('edit-bio-wilayah').value = data.wilayah || '';
+                    document.getElementById('edit-bio-deskripsi').value = data.deskripsi || '';
+
+                    document.getElementById('modal-edit-bio').classList.remove('hidden');
+                };
+            }
+
+            closeEditBioModal() {
+                document.getElementById('modal-edit-bio').classList.add('hidden');
+            }
+
+            saveProfileData(e) {
+                e.preventDefault();
+                const bioObj = {
+                    id: 'bio',
+                    name: document.getElementById('edit-bio-name').value,
+                    nip: document.getElementById('edit-bio-nip').value,
+                    instansi: document.getElementById('edit-bio-instansi').value,
+                    jabatan: document.getElementById('edit-bio-jabatan').value,
+                    materi: document.getElementById('edit-bio-materi').value,
+                    dinas: document.getElementById('edit-bio-dinas').value,
+                    wa: document.getElementById('edit-bio-wa').value,
+                    wilayah: document.getElementById('edit-bio-wilayah').value,
+                    deskripsi: document.getElementById('edit-bio-deskripsi').value
+                };
+
+                const tx = this.db.transaction('profile', 'readwrite');
+                tx.objectStore('profile').put(bioObj);
+
+                tx.oncomplete = () => {
+                    this.showToast('Profil FASDA berhasil diperbarui.', 'success');
+                    this.closeEditBioModal();
+                    this.loadProfileData();
+                };
+            }
+
+            handleProfilePhotoUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const tx = this.db.transaction('profile', 'readwrite');
+                tx.objectStore('profile').put({ id: 'photo', blob: file });
+
+                tx.oncomplete = () => {
+                    this.showToast('Foto profil diperbarui.', 'success');
+                    this.loadProfileData();
+                };
+            }
+
+            handleAppLogoUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const tx = this.db.transaction('profile', 'readwrite');
+                tx.objectStore('profile').put({ id: 'logo', blob: file });
+
+                tx.oncomplete = () => {
+                    this.showToast('Logo aplikasi diperbarui.', 'success');
+                    this.loadProfileData();
+                };
+            }
+
+            resetAppLogo() {
+                const tx = this.db.transaction('profile', 'readwrite');
+                tx.objectStore('profile').delete('logo');
+
+                tx.oncomplete = () => {
+                    document.getElementById('topbar-logo-container').innerHTML = `<i class="fa-solid fa-graduation-cap text-lg"></i>`;
+                    document.getElementById('bio-app-logo-preview').innerHTML = `<i class="fa-solid fa-graduation-cap text-2xl text-slate-800"></i>`;
+                    this.showToast('Logo aplikasi dikembalikan ke default.', 'info');
+                };
+            }
+
+            loadDashboardStats() {
+                const tx = this.db.transaction(['materials', 'wordDocs', 'icebreaker', 'externalLinks'], 'readonly');
+                
+                tx.objectStore('materials').count().onsuccess = (e) => {
+                    document.getElementById('stat-total-pdf').textContent = e.target.result;
+                };
+                tx.objectStore('wordDocs').count().onsuccess = (e) => {
+                    document.getElementById('stat-total-word').textContent = e.target.result;
+                };
+                tx.objectStore('icebreaker').count().onsuccess = (e) => {
+                    document.getElementById('stat-total-ice').textContent = e.target.result;
+                };
+                tx.objectStore('externalLinks').count().onsuccess = (e) => {
+                    document.getElementById('stat-total-link').textContent = e.target.result;
+                };
+            }
+
+            populateMaterialSelects() {
+                const tx = this.db.transaction('materials', 'readonly');
+                const store = tx.objectStore('materials');
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    const materials = req.result;
+                    const selectUtama = document.getElementById('select-materi-utama');
+                    const selectPendukung = document.getElementById('select-materi-pendukung');
+
+                    selectUtama.innerHTML = '<option value="">-- Pilih Materi Utama --</option>';
+                    selectPendukung.innerHTML = '<option value="">-- Pilih Materi Pendukung --</option>';
+
+                    materials.forEach(item => {
+                        const opt = `<option value="${item.id}">${item.title}</option>`;
+                        if (item.category === 'utama') {
+                            selectUtama.innerHTML += opt;
+                        } else if (item.category === 'pendukung') {
+                            selectPendukung.innerHTML += opt;
+                        }
+                    });
+                };
+            }
+
+            async loadPdfMaterial(category, id) {
+                if (!id) return;
+
+                this.activePdfCategory = category;
+                const tx = this.db.transaction('materials', 'readonly');
+                const req = tx.objectStore('materials').get(Number(id));
+
+                req.onsuccess = async () => {
+                    const item = req.result;
+                    if (!item || !item.fileBlob) return;
+
+                    const arrayBuffer = await item.fileBlob.arrayBuffer();
+                    this.activePdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    this.pdfTotalPages = this.activePdfDoc.numPages;
+                    this.pdfCurrentPageNum = 1;
+                    this.pdfScale = 1.0;
+
+                    if (category === 'utama') {
+                        document.getElementById('pdf-placeholder-utama').classList.add('hidden');
+                        document.getElementById('pdf-view-wrapper-utama').classList.remove('hidden');
+                        document.getElementById('pdf-view-wrapper-utama').classList.add('flex');
+                        document.getElementById('pdf-total-pages').textContent = this.pdfTotalPages;
+                    } else {
+                        document.getElementById('pdf-placeholder-pendukung').classList.add('hidden');
+                        document.getElementById('pdf-view-wrapper-pendukung').classList.remove('hidden');
+                        document.getElementById('pdf-view-wrapper-pendukung').classList.add('flex');
+                        document.getElementById('pdf-total-pages-p').textContent = this.pdfTotalPages;
+                    }
+
+                    this.renderPdfPage();
+                };
+            }
+
+            async renderPdfPage() {
+                if (!this.activePdfDoc) return;
+
+                const page = await this.activePdfDoc.getPage(this.pdfCurrentPageNum);
+                const viewport = page.getViewport({ scale: this.pdfScale });
+
+                let canvas = document.getElementById('pdf-canvas-utama');
+                if (this.activePdfCategory === 'pendukung') {
+                    canvas = document.getElementById('pdf-canvas-pendukung');
+                }
+
+                if (!document.getElementById('presentation-overlay').classList.contains('hidden')) {
+                    canvas = document.getElementById('pres-canvas');
+                }
+
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                await page.render(renderContext).promise;
+
+                const scalePercentage = `${Math.round(this.pdfScale * 100)}%`;
+                if (this.activePdfCategory === 'utama') {
+                    document.getElementById('pdf-current-page').textContent = this.pdfCurrentPageNum;
+                    document.getElementById('pdf-zoom-level').textContent = scalePercentage;
+                } else {
+                    document.getElementById('pdf-current-page-p').textContent = this.pdfCurrentPageNum;
+                    document.getElementById('pdf-zoom-level-p').textContent = scalePercentage;
+                }
+
+                document.getElementById('pres-current-page').textContent = this.pdfCurrentPageNum;
+                document.getElementById('pres-total-pages').textContent = this.pdfTotalPages;
+                document.getElementById('pres-zoom-level').textContent = scalePercentage;
+            }
+
+            changePdfPage(delta) {
+                if (!this.activePdfDoc) return;
+                const newNum = this.pdfCurrentPageNum + delta;
+                if (newNum >= 1 && newNum <= this.pdfTotalPages) {
+                    this.pdfCurrentPageNum = newNum;
+                    this.renderPdfPage();
+                }
+            }
+
+            zoomPdf(delta) {
+                if (!this.activePdfDoc) return;
+                let newScale = this.pdfScale + delta;
+                if (newScale < 0.5) newScale = 0.5;
+                if (newScale > 2.5) newScale = 2.5;
+
+                this.pdfScale = parseFloat(newScale.toFixed(2));
+                this.renderPdfPage();
+            }
+
+            resetZoomPdf() {
+                if (!this.activePdfDoc) return;
+                this.pdfScale = 1.0;
+                this.renderPdfPage();
+            }
+
+            launchPresentationMode(category) {
+                if (!this.activePdfDoc) {
+                    this.showToast('Silakan pilih berkas PDF materi terlebih dahulu.', 'info');
+                    return;
+                }
+
+                document.getElementById('presentation-overlay').classList.remove('hidden');
+                document.getElementById('presentation-overlay').classList.add('flex');
+                this.renderPdfPage();
+            }
+
+            exitPresentationMode() {
+                document.getElementById('presentation-overlay').classList.add('hidden');
+                document.getElementById('presentation-overlay').classList.remove('flex');
+            }
+
+            execCmd(command, value = null) {
+                document.execCommand(command, false, value);
+            }
+
+            populateWordSelect() {
+                const tx = this.db.transaction('wordDocs', 'readonly');
+                const store = tx.objectStore('wordDocs');
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    const docs = req.result;
+                    const select = document.getElementById('select-word-doc');
+                    select.innerHTML = '<option value="">-- Pilih Dokumen --</option>';
+
+                    docs.forEach(item => {
+                        select.innerHTML += `<option value="${item.id}">${item.title}</option>`;
+                    });
+                };
+            }
+
+            loadWordDocument(id) {
+                if (!id) return;
+                const tx = this.db.transaction('wordDocs', 'readonly');
+                const req = tx.objectStore('wordDocs').get(Number(id));
+
+                req.onsuccess = () => {
+                    if (req.result) {
+                        document.getElementById('word-editor-container').innerHTML = req.result.htmlContent;
+                    }
+                };
+            }
+
+            saveCurrentWordDoc() {
+                const select = document.getElementById('select-word-doc');
+                const docId = select.value;
+                const htmlContent = document.getElementById('word-editor-container').innerHTML;
+
+                if (!docId) {
+                    const title = prompt('Masukkan Judul Dokumen Word Baru:', 'Dokumen A4 Baru');
+                    if (!title) return;
+
+                    const tx = this.db.transaction('wordDocs', 'readwrite');
+                    tx.objectStore('wordDocs').add({ title: title, htmlContent: htmlContent, date: new Date().toISOString() });
+                    tx.oncomplete = () => {
+                        this.showToast('Dokumen baru disimpan ke IndexedDB.', 'success');
+                        this.populateWordSelect();
+                        this.renderWordDocsTable();
+                        this.loadDashboardStats();
+                    };
+                } else {
+                    const tx = this.db.transaction('wordDocs', 'readwrite');
+                    const store = tx.objectStore('wordDocs');
+                    const req = store.get(Number(docId));
+                    req.onsuccess = () => {
+                        const item = req.result;
+                        item.htmlContent = htmlContent;
+                        store.put(item);
+                        this.showToast('Perubahan dokumen berhasil disimpan.', 'success');
+                    };
+                }
+            }
+
+            handleDocxImport(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const arrayBuffer = event.target.result;
+                    mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
+                        .then((result) => {
+                            const html = result.value;
+                            const title = file.name.replace('.docx', '');
+
+                            const tx = this.db.transaction('wordDocs', 'readwrite');
+                            tx.objectStore('wordDocs').add({
+                                title: title,
+                                htmlContent: html,
+                                date: new Date().toISOString()
+                            });
+
+                            tx.oncomplete = () => {
+                                this.showToast('Dokumen .docx berhasil dikonversi & disimpan.', 'success');
+                                this.populateWordSelect();
+                                this.renderWordDocsTable();
+                                this.loadDashboardStats();
+                            };
+                        })
+                        .catch(() => {
+                            this.showToast('Gagal mengonversi berkas .docx', 'error');
+                        });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            createNewBlankWordDoc() {
+                const title = prompt('Judul Dokumen A4 Kosong Baru:', 'Laporan Pendampingan Baru');
+                if (!title) return;
+
+                const defaultHtml = `
+                    <h2 style="text-align: center; color: #1e293b;"><b>${title.toUpperCase()}</b></h2>
+                    <hr style="margin: 15px 0; border-top: 2px solid #a5c5d9;">
+                    <p>Ketikkan isi materi dokumen di sini...</p>
+                `;
+
+                const tx = this.db.transaction('wordDocs', 'readwrite');
+                tx.objectStore('wordDocs').add({
+                    title: title,
+                    htmlContent: defaultHtml,
+                    date: new Date().toISOString()
+                });
+
+                tx.oncomplete = () => {
+                    this.showToast('Dokumen kosong baru dibuat.', 'success');
+                    this.populateWordSelect();
+                    this.renderWordDocsTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            renderWordDocsTable() {
+                const tx = this.db.transaction('wordDocs', 'readonly');
+                const req = tx.objectStore('wordDocs').getAll();
+
+                req.onsuccess = () => {
+                    const items = req.result;
+                    const tbody = document.getElementById('table-word-body');
+                    if (!tbody) return;
+
+                    tbody.innerHTML = '';
+                    if (items.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada dokumen Word tersimpan.</td></tr>`;
+                        return;
+                    }
+
+                    items.forEach((item, index) => {
+                        const row = `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="p-3 font-mono font-bold text-slate-500">${index + 1}</td>
+                                <td class="p-3 font-semibold text-slate-900">${item.title}</td>
+                                <td class="p-3 text-center">
+                                    <button onclick="app.loadWordDocument(${item.id}); app.navigateTo('materi-word');" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded transition mr-1" title="Buka Dokumen">
+                                        <i class="fa-solid fa-folder-open text-xs"></i>
+                                    </button>
+                                    <button onclick="app.deleteWordDoc(${item.id})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition" title="Hapus Dokumen">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                };
+            }
+
+            deleteWordDoc(id) {
+                const tx = this.db.transaction('wordDocs', 'readwrite');
+                tx.objectStore('wordDocs').delete(Number(id));
+                tx.oncomplete = () => {
+                    this.showToast('Dokumen Word berhasil dihapus.', 'info');
+                    this.populateWordSelect();
+                    this.renderWordDocsTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            renderIcePlaylist() {
+                const tx = this.db.transaction('icebreaker', 'readonly');
+                const req = tx.objectStore('icebreaker').getAll();
+
+                req.onsuccess = () => {
+                    this.icePlaylist = req.result;
+                    document.getElementById('ice-playlist-count').textContent = this.icePlaylist.length;
+
+                    const container = document.getElementById('ice-playlist-items');
+                    container.innerHTML = '';
+
+                    if (this.icePlaylist.length === 0) {
+                        container.innerHTML = '<p class="text-xs text-slate-400 p-2 text-center">Playlist kosong.</p>';
+                        return;
+                    }
+
+                    this.icePlaylist.forEach((video, idx) => {
+                        const isCurrent = idx === this.currentIceIndex;
+                        const card = `
+                            <div onclick="app.playIceVideo(${idx})" class="p-3 rounded-xl border ${isCurrent ? 'bg-purple-50 border-purple-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'} cursor-pointer flex items-center justify-between transition">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid ${video.type === 'url' ? 'fa-youtube text-red-500' : 'fa-file-video text-purple-600'} text-base"></i>
+                                    <span class="text-xs font-semibold text-slate-800 line-clamp-1">${video.title}</span>
+                                </div>
+                                <i class="fa-solid fa-circle-play text-slate-400"></i>
+                            </div>
+                        `;
+                        container.innerHTML += card;
+                    });
+                };
+            }
+
+            renderSettingIceTable() {
+                const tx = this.db.transaction('icebreaker', 'readonly');
+                const req = tx.objectStore('icebreaker').getAll();
+
+                req.onsuccess = () => {
+                    const items = req.result;
+                    const tbody = document.getElementById('table-ice-body');
+                    if (!tbody) return;
+
+                    tbody.innerHTML = '';
+
+                    if (items.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada item video ice breaking yang tersimpan.</td></tr>`;
+                        return;
+                    }
+
+                    items.forEach((item, index) => {
+                        const row = `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="p-3 text-center font-mono font-bold text-slate-500">${index + 1}</td>
+                                <td class="p-3 font-semibold text-slate-900">${item.title}</td>
+                                <td class="p-3">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.type === 'url' ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}">
+                                        <i class="fa-solid ${item.type === 'url' ? 'fa-link' : 'fa-file-video'} mr-1"></i> ${item.type === 'url' ? 'Tautan / URL' : 'MP4 Lokal'}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <button onclick="app.moveIceItem(${item.id}, 'up')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition" title="Naikkan Urutan">
+                                            <i class="fa-solid fa-arrow-up text-xs"></i>
+                                        </button>
+                                        <button onclick="app.moveIceItem(${item.id}, 'down')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition" title="Turunkan Urutan">
+                                            <i class="fa-solid fa-arrow-down text-xs"></i>
+                                        </button>
+                                        <button onclick="app.deleteIceItem(${item.id})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition ml-1" title="Hapus Video">
+                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                };
+            }
+
+            toggleIceTypeInput(val) {
+                if (val === 'url') {
+                    document.getElementById('ice-input-url-box').classList.remove('hidden');
+                    document.getElementById('ice-input-file-box').classList.add('hidden');
+                } else {
+                    document.getElementById('ice-input-url-box').classList.add('hidden');
+                    document.getElementById('ice-input-file-box').classList.remove('hidden');
+                }
+            }
+
+            handleAddIceSubmit(e) {
+                e.preventDefault();
+                const title = document.getElementById('ice-title').value;
+                const type = document.getElementById('ice-type').value;
+
+                const newObj = { title, type, date: new Date().toISOString() };
+
+                if (type === 'url') {
+                    newObj.url = document.getElementById('ice-url').value;
+                    if (!newObj.url) {
+                        this.showToast('Masukkan URL video YouTube atau direct MP4.', 'error');
+                        return;
+                    }
+                } else {
+                    const file = document.getElementById('ice-file').files[0];
+                    if (!file) {
+                        this.showToast('Pilih berkas MP4 lokal.', 'error');
+                        return;
+                    }
+                    newObj.videoBlob = file;
+                }
+
+                const tx = this.db.transaction('icebreaker', 'readwrite');
+                tx.objectStore('icebreaker').add(newObj);
+
+                tx.oncomplete = () => {
+                    this.showToast('Video Ice Breaking berhasil ditambahkan.', 'success');
+                    document.getElementById('form-add-ice').reset();
+                    this.toggleIceTypeInput('url');
+                    
+                    this.renderIcePlaylist();
+                    this.renderSettingIceTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            deleteIceItem(id) {
+                const tx = this.db.transaction('icebreaker', 'readwrite');
+                tx.objectStore('icebreaker').delete(Number(id));
+
+                tx.oncomplete = () => {
+                    this.showToast('Item video berhasil dihapus.', 'info');
+                    this.renderIcePlaylist();
+                    this.renderSettingIceTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            moveIceItem(id, direction) {
+                const tx = this.db.transaction('icebreaker', 'readwrite');
+                const store = tx.objectStore('icebreaker');
+                const req = store.getAll();
+
+                req.onsuccess = () => {
+                    let items = req.result;
+                    const index = items.findIndex(item => item.id === Number(id));
+
+                    if (index === -1) return;
+
+                    if (direction === 'up' && index > 0) {
+                        const temp = items[index];
+                        items[index] = items[index - 1];
+                        items[index - 1] = temp;
+                    } else if (direction === 'down' && index < items.length - 1) {
+                        const temp = items[index];
+                        items[index] = items[index + 1];
+                        items[index + 1] = temp;
+                    } else {
+                        return;
+                    }
+
+                    const clearTx = this.db.transaction('icebreaker', 'readwrite');
+                    const clearStore = clearTx.objectStore('icebreaker');
+                    clearStore.clear();
+
+                    clearTx.oncomplete = () => {
+                        const writeTx = this.db.transaction('icebreaker', 'readwrite');
+                        const writeStore = writeTx.objectStore('icebreaker');
+                        items.forEach(item => writeStore.add(item));
+
+                        writeTx.oncomplete = () => {
+                            this.renderIcePlaylist();
+                            this.renderSettingIceTable();
+                        };
+                    };
+                };
+            }
+
+            playIceVideo(index) {
+                if (index < 0 || index >= this.icePlaylist.length) return;
+
+                this.currentIceIndex = index;
+                const video = this.icePlaylist[index];
+                const wrapper = document.getElementById('ice-video-wrapper');
+
+                if (video.type === 'url') {
+                    if (video.url.includes('youtube.com') || video.url.includes('youtu.be')) {
+                        let embedUrl = video.url.replace('watch?v=', 'embed/');
+                        if (embedUrl.includes('youtu.be/')) {
+                            embedUrl = embedUrl.replace('youtu.be/', 'youtube.com/embed/');
+                        }
+                        wrapper.innerHTML = `<iframe src="${embedUrl}?autoplay=1" class="w-full h-full min-h-[380px] rounded-2xl" allow="autoplay" allowfullscreen></iframe>`;
+                    } else {
+                        wrapper.innerHTML = `<video src="${video.url}" controls autoplay class="w-full max-h-[400px] rounded-2xl" onended="app.playNextIceVideo()"></video>`;
+                    }
+                } else if (video.type === 'file' && video.videoBlob) {
+                    const videoUrl = URL.createObjectURL(video.videoBlob);
+                    wrapper.innerHTML = `<video src="${videoUrl}" controls autoplay class="w-full max-h-[400px] rounded-2xl" onended="app.playNextIceVideo()"></video>`;
+                }
+
+                this.renderIcePlaylist();
+            }
+
+            playNextIceVideo() {
+                if (this.icePlaylist.length === 0) return;
+                const nextIdx = (this.currentIceIndex + 1) % this.icePlaylist.length;
+                this.playIceVideo(nextIdx);
+            }
+
+            openAddWaModal() {
+                document.getElementById('form-add-wa').reset();
+                document.getElementById('modal-add-wa').classList.remove('hidden');
+            }
+
+            closeAddWaModal() {
+                document.getElementById('modal-add-wa').classList.add('hidden');
+            }
+
+            async handleAddWaGroupSubmit(e) {
+                e.preventDefault();
+                const name = document.getElementById('add-wa-name').value;
+                const desc = document.getElementById('add-wa-desc').value;
+                const link = document.getElementById('add-wa-link').value;
+                const qrFileInput = document.getElementById('add-wa-qr-file');
+
+                const newGroup = {
+                    name: name,
+                    desc: desc,
+                    link: link,
+                    date: new Date().toISOString()
+                };
+
+                if (qrFileInput.files && qrFileInput.files[0]) {
+                    newGroup.qrBlob = qrFileInput.files[0];
+                }
+
+                const tx = this.db.transaction('waGroups', 'readwrite');
+                tx.objectStore('waGroups').add(newGroup);
+
+                tx.oncomplete = () => {
+                    this.showToast('Gugus WA baru berhasil ditambahkan.', 'success');
+                    this.closeAddWaModal();
+                    this.renderWaGroups();
+                    this.loadDashboardStats();
+                };
+            }
+
+            renderWaGroups() {
+                const tx = this.db.transaction('waGroups', 'readonly');
+                const req = tx.objectStore('waGroups').getAll();
+
+                req.onsuccess = () => {
+                    const groups = req.result;
+                    const container = document.getElementById('grup-wa-cards-container');
+                    container.innerHTML = '';
+
+                    if (groups.length === 0) {
+                        container.innerHTML = `
+                            <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 space-y-2">
+                                <i class="fa-brands fa-whatsapp text-4xl text-slate-300"></i>
+                                <p class="text-xs">Belum ada grup WA Gugus yang ditambahkan. Klik tombol "+ Tambah Gugus Baru" untuk menambahkan.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    groups.forEach(g => {
+                        const qrUrl = g.qrBlob ? URL.createObjectURL(g.qrBlob) : 'https://placehold.co/200x200/e1eef4/2a4457?text=QR+WA';
+                        const card = `
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="space-y-1">
+                                        <h4 class="font-bold text-slate-900 text-sm">${g.name}</h4>
+                                        <p class="text-xs text-slate-500 leading-snug">${g.desc || 'Gugus Pendampingan FASDA'}</p>
+                                    </div>
+                                    <div onclick="app.openQrModal('${g.name}', '${qrUrl}')" class="w-14 h-14 bg-slate-100 p-1 rounded-lg border border-slate-200 cursor-pointer hover:scale-105 transition shrink-0 flex items-center justify-center overflow-hidden" title="Klik untuk memperbesar QR Code">
+                                        <img src="${qrUrl}" class="w-full h-full object-cover rounded" alt="QR Code">
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                    <a href="${g.link}" target="_blank" rel="noopener noreferrer" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded-xl font-bold transition text-center flex items-center justify-center gap-2">
+                                        <i class="fa-brands fa-whatsapp text-sm"></i> Buka Grup WA
+                                    </a>
+                                    <button onclick="app.deleteWaGroup(${g.id})" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition" title="Hapus Gugus">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += card;
+                    });
+                };
+            }
+
+            deleteWaGroup(id) {
+                if (!confirm('Apakah Anda yakin ingin menghapus data grup WA ini?')) return;
+                const tx = this.db.transaction('waGroups', 'readwrite');
+                tx.objectStore('waGroups').delete(Number(id));
+                tx.oncomplete = () => {
+                    this.showToast('Grup WA berhasil dihapus.', 'info');
+                    this.renderWaGroups();
+                    this.loadDashboardStats();
+                };
+            }
+
+            openAddLinkModal() {
+                document.getElementById('form-add-link').reset();
+                document.getElementById('modal-add-link').classList.remove('hidden');
+            }
+
+            closeAddLinkModal() {
+                document.getElementById('modal-add-link').classList.add('hidden');
+            }
+
+            async handleAddExternalLinkSubmit(e) {
+                e.preventDefault();
+                const title = document.getElementById('add-link-title').value;
+                const category = document.getElementById('add-link-category').value;
+                const url = document.getElementById('add-link-url').value;
+                const desc = document.getElementById('add-link-desc').value;
+                const qrFileInput = document.getElementById('add-link-qr-file');
+
+                const newLink = {
+                    title: title,
+                    category: category,
+                    url: url,
+                    desc: desc,
+                    date: new Date().toISOString()
+                };
+
+                if (qrFileInput.files && qrFileInput.files[0]) {
+                    newLink.qrBlob = qrFileInput.files[0];
+                }
+
+                const tx = this.db.transaction('externalLinks', 'readwrite');
+                tx.objectStore('externalLinks').add(newLink);
+
+                tx.oncomplete = () => {
+                    this.showToast('Tautan khusus baru berhasil ditambahkan.', 'success');
+                    this.closeAddLinkModal();
+                    this.renderExternalLinks();
+                    this.loadDashboardStats();
+                };
+            }
+
+            renderExternalLinks(filterTerm = '') {
+                const tx = this.db.transaction('externalLinks', 'readonly');
+                const req = tx.objectStore('externalLinks').getAll();
+
+                req.onsuccess = () => {
+                    let links = req.result;
+                    if (filterTerm.trim() !== '') {
+                        const term = filterTerm.toLowerCase();
+                        links = links.filter(l => l.title.toLowerCase().includes(term) || (l.desc && l.desc.toLowerCase().includes(term)) || l.category.toLowerCase().includes(term));
+                    }
+
+                    const container = document.getElementById('external-links-grid');
+                    container.innerHTML = '';
+
+                    if (links.length === 0) {
+                        container.innerHTML = `
+                            <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 space-y-2">
+                                <i class="fa-solid fa-link text-4xl text-slate-300"></i>
+                                <p class="text-xs">Belum ada tautan khusus yang ditemukan. Klik tombol "+ Tambah Link Khusus" untuk menambahkan.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    links.forEach(l => {
+                        const hasQr = Boolean(l.qrBlob);
+                        const qrUrl = hasQr ? URL.createObjectURL(l.qrBlob) : '';
+                        
+                        const card = `
+                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition">
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="px-2.5 py-1 bg-frozen-100 text-frozen-800 text-[10px] font-bold rounded-full border border-frozen-200">
+                                            ${l.category}
+                                        </span>
+                                        ${hasQr ? `<button onclick="app.openQrModal('${l.title}', '${qrUrl}')" class="text-xs text-frozen-600 hover:text-frozen-800 font-semibold flex items-center gap-1"><i class="fa-solid fa-qrcode"></i> Lihat QR</button>` : ''}
+                                    </div>
+                                    <h4 class="font-bold text-slate-900 text-sm">${l.title}</h4>
+                                    <p class="text-xs text-slate-500 leading-snug line-clamp-2">${l.desc || 'Tautan eksternal pendukung FASDA'}</p>
+                                </div>
+
+                                <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                    <a href="${l.url}" target="_blank" rel="noopener noreferrer" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-xs py-2 rounded-xl font-bold transition text-center flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> Buka Link Website
+                                    </a>
+                                    <button onclick="app.deleteExternalLink(${l.id})" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition" title="Hapus Link">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += card;
+                    });
+                };
+            }
+
+            filterExternalLinks() {
+                const term = document.getElementById('link-search-input').value;
+                this.renderExternalLinks(term);
+            }
+
+            deleteExternalLink(id) {
+                if (!confirm('Apakah Anda yakin ingin menghapus tautan khusus ini?')) return;
+                const tx = this.db.transaction('externalLinks', 'readwrite');
+                tx.objectStore('externalLinks').delete(Number(id));
+                tx.oncomplete = () => {
+                    this.showToast('Tautan khusus berhasil dihapus.', 'info');
+                    this.renderExternalLinks();
+                    this.loadDashboardStats();
+                };
+            }
+
+            handleMateriPdfSubmit(e) {
+                e.preventDefault();
+                const title = document.getElementById('materi-title').value;
+                const category = document.getElementById('materi-category').value;
+                const file = document.getElementById('materi-file').files[0];
+
+                if (!file) return;
+
+                const tx = this.db.transaction('materials', 'readwrite');
+                tx.objectStore('materials').add({
+                    title: title,
+                    category: category,
+                    fileBlob: file,
+                    date: new Date().toISOString()
+                });
+
+                tx.oncomplete = () => {
+                    this.showToast('File PDF berhasil disimpan ke IndexedDB.', 'success');
+                    document.getElementById('form-upload-materi').reset();
+                    this.populateMaterialSelects();
+                    this.renderAllMaterialsTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            renderAllMaterialsTable() {
+                const tx = this.db.transaction('materials', 'readonly');
+                const req = tx.objectStore('materials').getAll();
+
+                req.onsuccess = () => {
+                    const items = req.result;
+                    const tbody = document.getElementById('table-materi-body');
+                    if (!tbody) return;
+
+                    tbody.innerHTML = '';
+                    if (items.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Belum ada materi PDF tersimpan.</td></tr>`;
+                        return;
+                    }
+
+                    items.forEach((item, index) => {
+                        const row = `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="p-3 font-mono font-bold text-slate-500">${index + 1}</td>
+                                <td class="p-3 font-semibold text-slate-900">${item.title}</td>
+                                <td class="p-3">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.category === 'utama' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">
+                                        ${item.category === 'utama' ? 'Utama' : 'Pendukung'}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <button onclick="app.deleteMaterialItem(${item.id})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition" title="Hapus Materi">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                };
+            }
+
+            deleteMaterialItem(id) {
+                const tx = this.db.transaction('materials', 'readwrite');
+                tx.objectStore('materials').delete(Number(id));
+                tx.oncomplete = () => {
+                    this.showToast('Materi PDF berhasil dihapus.', 'info');
+                    this.populateMaterialSelects();
+                    this.renderAllMaterialsTable();
+                    this.loadDashboardStats();
+                };
+            }
+
+            openQrModal(title, imgUrl) {
+                document.getElementById('modal-qr-title').textContent = title;
+                document.getElementById('modal-qr-img').src = imgUrl;
+                document.getElementById('modal-qr').classList.remove('hidden');
+            }
+
+            closeQrModal() {
+                document.getElementById('modal-qr').classList.add('hidden');
+            }
+        }
+
+        // Initialize single app instance when window loads
+        let app;
+        window.onload = () => {
+            app = new FasdaApp();
+            app.init();
+        };
+    </script>
+</body>
+</html>
